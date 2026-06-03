@@ -10,13 +10,6 @@ app.use(helmet())
 app.use(express.json())
 app.use("/uploads", express.static("uploads"))
 
-
-const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10,
-    message: "Terlalu banyak percobaan login"
-})
-
 app.use("/api/auth/login", loginLimiter)
 
 app.use(cors({
@@ -25,6 +18,12 @@ app.use(cors({
     },
     credentials: true
 }))
+
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: "Terlalu banyak percobaan login"
+})
 
 const loginRoute = require("./Routes/LoginRoute")
 const logAbsen = require("./Routes/LogAbsenR")
