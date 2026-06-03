@@ -4,26 +4,34 @@ const helmet = require("helmet")
 const rateLimit = require("express-rate-limit")
 require("dotenv").config()
 require("./Corn/AutoAlpha")
+
 const app = express()
+
 app.set("trust proxy", 1)
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    callback(null, true)
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}
+
+app.use(cors(corsOptions))
+app.options(/.*/, cors(corsOptions))
+
 app.use(helmet())
 app.use(express.json())
 app.use("/uploads", express.static("uploads"))
 
-app.use("/api/auth/login", loginLimiter)
-
-app.use(cors({
-    origin: function (origin, callback) {
-        callback(null, true)
-    },
-    credentials: true
-}))
-
 const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10,
-    message: "Terlalu banyak percobaan login"
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: "Terlalu banyak percobaan login",
 })
+
+app.use("/api/auth/login", loginLimiter)
 
 const loginRoute = require("./Routes/LoginRoute")
 const logAbsen = require("./Routes/LogAbsenR")
@@ -38,19 +46,11 @@ app.use("/api/scanner", scannerQr)
 app.use("/api/user-akses", userAkses)
 
 app.get("/", (req, res) => {
-    res.send("Backend Absensi Running")
+  res.send("Backend Absensi Running")
 })
-
-// app.get("/ping", (req, res) => {
-//     return res.status(200).json({
-//         message: "pong",
-//         uptime: process.uptime(),
-//         timestamp: new Date()
-//     })
-// })
 
 const PORT = process.env.PORT || 3050
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`)
+  console.log(`Server running on port ${PORT}`)
 })
