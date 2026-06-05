@@ -1,10 +1,10 @@
 const express = require("express")
 const router = express.Router()
 
-const QrController = require("../Controllers/QrController")
+const ScannerController = require("../Controllers/LogAbsenController")
 const auth = require("../Middleware/AuthMiddleware")
 const role = require("../Middleware/RoleMiddleware")
 
-router.post("/scan", auth, role.userCheck, QrController.scanQR)
+router.post("/scan", auth, role.userCheck, ScannerController.scanQR)
 
 module.exports = router

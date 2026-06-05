@@ -1,10 +1,10 @@
 const express = require("express")
 const router = express.Router()
 
-const LogAbsenController = require("../Controllers/LogAbsenController")
+const QrController = require("../Controllers/QrController")
 const auth = require("../Middleware/AuthMiddleware")
 const role = require("../Middleware/RoleMiddleware")
 
-router.get("/qr", auth, role.adminOrKetuaKelas, LogAbsenController.buatKodeQR)
+router.get("/qr", auth, role.adminOrKetuaKelas, QrController.buatKodeQR)
 
 module.exports = router
