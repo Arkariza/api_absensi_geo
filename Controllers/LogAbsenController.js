@@ -4,24 +4,21 @@ const SECRET = process.env.JWT_SECRET || "JWT_TOKEN"
 
 exports.buatKodeQR = (req, res) => {
     try {
-        const data = "QR_ABSENSI_ADMIN"
-
         const hash = crypto
             .createHmac("sha256", SECRET)
-            .update(data)
+            .update(QR_DATA)
             .digest("hex")
 
-        const qrPayLoad = `${data}:${hash}`
+        const qrPayLoad = `${QR_DATA}:${hash}`
 
         return res.json({
             message: "QR Admin berhasil di-load",
-            qr: qrPayLoad
+            qr: qrPayLoad,
         })
-
     } catch (error) {
         return res.status(500).json({
             message: "Gagal load QR Admin",
-            error: error.message
+            error: error.message,
         })
     }
 }

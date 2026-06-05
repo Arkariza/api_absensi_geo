@@ -2,6 +2,7 @@ const db = require("../Config/db")
 const crypto = require("crypto")
 
 const SECRET = process.env.JWT_SECRET || "JWT_TOKEN"
+const QR_DATA = "QR_ABSENSI_ADMIN"
 
 exports.scanQR = async (req, res) => {
     try {
@@ -20,68 +21,56 @@ exports.scanQR = async (req, res) => {
 
         const [data, hash] = parts
 
-        if (data !== "QR_ABSENSI_ADMIN") {
-            return res.status(400).json({ message: "QR bukan QR absensi admin" })
+        if (data !== QR_DATA) {
+            return res.status(400).json({
+                message: "QR bukan QR absensi admin",
+            })
         }
 
         const validHash = crypto
             .createHmac("sha256", SECRET)
-            .update(data)
+            .update(QR_DATA)
             .digest("hex")
 
         if (hash !== validHash) {
             return res.status(400).json({ message: "QR tidak valid" })
         }
 
-        const now = new Date()
+        const userResult = await db.query(
+            "SELECT id, username FROM users WHERE id = $1",
+            [userId]
+        )
 
-        const startOfDay = new Date(now)
-        startOfDay.setHours(0, 0, 0, 0)
-
-        const endOfDay = new Date(now)
-        endOfDay.setHours(23, 59, 59, 999)
-
-        const { data: already, error: checkError } = await db
-            .from("log_absen")
-            .select("id")
-            .eq("idUser", userId)
-            .gte("absen", startOfDay.toISOString())
-            .lte("absen", endOfDay.toISOString())
-            .limit(1)
-
-        if (checkError) {
-            return res.status(500).json({
-                message: "Gagal cek data absen",
-                error: checkError.message,
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "User tidak ditemukan",
             })
         }
 
-        if (already && already.length > 0) {
+        const alreadyResult = await db.query(
+            `SELECT id
+             FROM log_absen
+             WHERE iduser = $1
+             AND DATE(absen) = CURRENT_DATE`,
+            [userId]
+        )
+
+        if (alreadyResult.rows.length > 0) {
             return res.status(400).json({
                 message: "Kamu sudah absen hari ini",
             })
         }
 
-        const { error: insertError } = await db
-            .from("log_absen")
-            .insert([
-                {
-                    idUser: userId,
-                    absen: now.toISOString(),
-                    status: "hadir",
-                },
-            ])
-
-        if (insertError) {
-            return res.status(500).json({
-                message: "Gagal menyimpan absen",
-                error: insertError.message,
-            })
-        }
+        await db.query(
+            `INSERT INTO log_absen (iduser, absen, status)
+             VALUES ($1, NOW(), $2)`,
+            [userId, "hadir"]
+        )
 
         return res.json({
             message: "Absen berhasil",
-            waktu: now,
+            user: userResult.rows[0],
+            waktu: new Date(),
         })
     } catch (error) {
         return res.status(500).json({
