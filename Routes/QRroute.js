@@ -5,6 +5,6 @@ const QrController = require("../Controllers/QrController")
 const auth = require("../Middleware/AuthMiddleware")
 const role = require("../Middleware/RoleMiddleware")
 
-router.get("/qr", auth, role.userCheck, QrController.scanQR)
+router.post("/qr", auth, role.userCheck, QrController.scanQR)
 
 module.exports = router
