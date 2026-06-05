@@ -1,29 +1,68 @@
-const SECRET = "JWT_TOKEN"
+const db = require("../Config/db")
 const crypto = require("crypto")
 
-exports.buatKodeQR = (req, res) => {
+const SECRET = process.env.JWT_SECRET || "JWT_TOKEN"
+
+exports.scanQR = async (req, res) => {
     try {
         const userId = req.user.id
-        const timestamp = Date.now()
+        const { qr } = req.body
 
-        const data = `${userId}:${timestamp}`
+        if (!qr) {
+            return res.status(400).json({ message: "QR kosong" })
+        }
 
-        const hash = crypto
+        const parts = qr.split(":")
+
+        if (parts.length !== 2) {
+            return res.status(400).json({ message: "Format QR invalid" })
+        }
+
+        const [data, hash] = parts
+
+        if (data !== "QR_ABSENSI_ADMIN") {
+            return res.status(400).json({ message: "QR bukan QR absensi admin" })
+        }
+
+        const validHash = crypto
             .createHmac("sha256", SECRET)
             .update(data)
             .digest("hex")
 
-        const qrPayLoad = `${data}:${hash}`
+        if (hash !== validHash) {
+            return res.status(400).json({ message: "QR tidak valid" })
+        }
+
+        const [already] = await db.query(
+            `SELECT id 
+             FROM log_absen 
+             WHERE idUser = ? 
+             AND DATE(absen) = CURDATE()`,
+            [userId]
+        )
+
+        if (already.length > 0) {
+            return res.status(400).json({
+                message: "Kamu sudah absen hari ini"
+            })
+        }
+
+        await db.query(
+            `INSERT INTO log_absen 
+             (idUser, absen, status)
+             VALUES (?, NOW(), ?)`,
+            [userId, "hadir"]
+        )
 
         return res.json({
-            message: "QR berhasil di Load",
-            qr: qrPayLoad,
+            message: "Absen berhasil",
+            waktu: new Date()
         })
 
     } catch (error) {
         return res.status(500).json({
-            message: "gagal load QR",
-            error: error.message,
+            message: "Absen gagal",
+            error: error.message
         })
     }
 }

@@ -1,75 +1,26 @@
-const db = require("../Config/db")
 const crypto = require("crypto")
 
-const SECRET = "JWT_TOKEN"
+const SECRET = process.env.JWT_SECRET || "JWT_TOKEN"
 
-exports.scanQR = async (req, res) => {
+exports.buatKodeQR = (req, res) => {
     try {
-        const { qr } = req.body
+        const data = "QR_ABSENSI_ADMIN"
 
-        if (!qr) {
-            return res.status(400).json({ message: "QR kosong" })
-        }
-
-        const parts = qr.split(":")
-
-        if (parts.length !== 3) {
-            return res.status(400).json({ message: "Format QR Invalid" })
-        }
-
-        const [userId, timestamp, hash] = parts
-
-        const validHash = crypto
+        const hash = crypto
             .createHmac("sha256", SECRET)
-            .update(`${userId}:${timestamp}`)
+            .update(data)
             .digest("hex")
 
-        if (hash !== validHash) {
-            return res.status(400).json({ message: "QR gak Valid" })
-        }
-
-        const now = Date.now()
-        const maxAge = 2 * 60 * 60 * 1000
-
-        if (now - Number(timestamp) > maxAge) {
-            return res.status(400).json({ message: "QR Expire, Silahkan Restart" })
-        }
-
-        const userResult = await db.query(
-            "SELECT id, username FROM users WHERE id = $1",
-            [userId]
-        )
-
-        if (userResult.rows.length === 0) {
-            return res.status(404).json({ message: "User gak ditemukan" })
-        }
-
-        const alreadyResult = await db.query(
-            `SELECT id
-             FROM log_absen
-             WHERE iduser = $1
-             AND DATE(absen) = CURRENT_DATE`,
-            [userId]
-        )
-
-        if (alreadyResult.rows.length > 0) {
-            return res.status(400).json({ message: "User ini sudah Absen" })
-        }
-
-        await db.query(
-            `INSERT INTO log_absen (iduser, absen, status)
-             VALUES ($1, NOW(), $2)`,
-            [userId, "hadir"]
-        )
+        const qrPayLoad = `${data}:${hash}`
 
         return res.json({
-            message: "Absen berhasil",
-            user: userResult.rows[0],
-            waktu: new Date()
+            message: "QR Admin berhasil di-load",
+            qr: qrPayLoad
         })
+
     } catch (error) {
         return res.status(500).json({
-            message: "Absen Gagal",
+            message: "Gagal load QR Admin",
             error: error.message
         })
     }
