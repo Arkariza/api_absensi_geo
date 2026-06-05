@@ -5,6 +5,6 @@ const ScannerController = require("../Controllers/LogAbsenController")
 const auth = require("../Middleware/AuthMiddleware")
 const role = require("../Middleware/RoleMiddleware")
 
-router.post("/scan", auth, role.userCheck, ScannerController.scanQR)
+router.post("/scan", auth, ScannerController.scanQR)
 
 module.exports = router
