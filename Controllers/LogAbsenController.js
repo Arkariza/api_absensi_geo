@@ -1,6 +1,7 @@
 const crypto = require("crypto")
 
 const SECRET = process.env.JWT_SECRET || "JWT_TOKEN"
+const QR_DATA = "QR_ABSENSI_ADMIN"
 
 exports.buatKodeQR = (req, res) => {
     try {

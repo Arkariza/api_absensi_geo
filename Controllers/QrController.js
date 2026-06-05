@@ -33,7 +33,9 @@ exports.scanQR = async (req, res) => {
             .digest("hex")
 
         if (hash !== validHash) {
-            return res.status(400).json({ message: "QR tidak valid" })
+            return res.status(400).json({
+                message: "QR tidak valid",
+            })
         }
 
         const userResult = await db.query(
@@ -67,7 +69,7 @@ exports.scanQR = async (req, res) => {
             [userId, "hadir"]
         )
 
-        return res.json({
+        return res.status(201).json({
             message: "Absen berhasil",
             user: userResult.rows[0],
             waktu: new Date(),
